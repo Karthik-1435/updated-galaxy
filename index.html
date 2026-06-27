@@ -1,4 +1,4 @@
-   <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -282,12 +282,16 @@
     </div>
   </div>
 
-  <!-- AUDIO -->
+  <!-- ===== AUDIO - INTERSTELLAR MUSIC ===== -->
+  <!-- ⚠️ IMPORTANT: YouTube URLs DON'T work in audio tags! -->
+  <!-- Use your local MP3 file instead: -->
   <audio id="interstellar-music" loop preload="auto">
-    <!-- UNCOMMENT THE LINE BELOW AFTER ADDING YOUR interstellar.mp3 FILE -->
-    <!-- <source src="interstellar.mp3" type="audio/mpeg"> -->
+    <!-- Your local MP3 file (make sure it's in the same folder) -->
+    <source src="interstellar.mp3" type="audio/mpeg">
+    <source src="./interstellar.mp3" type="audio/mpeg">
+    
+    <!-- Fallback: Online instrumental track -->
     <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8f9c4f0.mp3?filename=interstellar-main-theme-14900.mp3" type="audio/mpeg">
-    <source src="https://cdn.pixabay.com/download/audio/2022/11/10/audio_2e3a4f7b5c.mp3?filename=space-ambient-11253.mp3" type="audio/mpeg">
   </audio>
 
   <script type="importmap">
@@ -309,6 +313,50 @@
     const musicBtn = document.getElementById('music-btn');
     const musicLabel = document.getElementById('music-label');
     let isPlaying = false;
+    let musicStarted = false;
+
+    console.log('🎵 Audio element loaded. Checking sources...');
+    
+    // Log all audio sources for debugging
+    const sources = audio.querySelectorAll('source');
+    sources.forEach((source, index) => {
+      console.log(`📁 Source ${index + 1}: ${source.getAttribute('src')} (type: ${source.getAttribute('type')})`);
+    });
+
+    function startMusic() {
+      if (musicStarted) {
+        console.log('🎵 Music already playing');
+        return;
+      }
+      
+      console.log('🎵 Attempting to start Interstellar music...');
+      audio.volume = 0.6;
+      
+      audio.play().then(() => {
+        isPlaying = true;
+        musicStarted = true;
+        musicLabel.textContent = 'Pause';
+        musicBtn.querySelector('.icon').textContent = '🔊';
+        console.log('✅ Interstellar "First Step" music started successfully! 🎵');
+      }).catch(err => {
+        console.log('❌ Audio play error:', err.message);
+        console.log('💡 Trying fallback...');
+        audio.load();
+        setTimeout(() => {
+          audio.play().then(() => {
+            isPlaying = true;
+            musicStarted = true;
+            musicLabel.textContent = 'Pause';
+            musicBtn.querySelector('.icon').textContent = '🔊';
+            console.log('✅ Music started after reload!');
+          }).catch(err2 => {
+            console.log('❌ Still cannot play:', err2.message);
+            musicLabel.textContent = 'Click to Play';
+            musicBtn.querySelector('.icon').textContent = '🔊';
+          });
+        }, 500);
+      });
+    }
 
     function toggleMusic() {
       if (isPlaying) {
@@ -316,25 +364,32 @@
         isPlaying = false;
         musicLabel.textContent = 'Play Theme';
         musicBtn.querySelector('.icon').textContent = '🔇';
+        console.log('⏸️ Music paused');
       } else {
         audio.play().then(() => {
           isPlaying = true;
+          musicStarted = true;
           musicLabel.textContent = 'Pause';
           musicBtn.querySelector('.icon').textContent = '🔊';
-        }).catch(() => {});
+          console.log('▶️ Music resumed');
+        }).catch(err => {
+          console.log('❌ Cannot play:', err.message);
+        });
       }
     }
     musicBtn.addEventListener('click', toggleMusic);
 
-    document.addEventListener('click', () => {
-      if (!isPlaying && audio.paused) {
-        audio.play().then(() => {
-          isPlaying = true;
-          musicLabel.textContent = 'Pause';
-          musicBtn.querySelector('.icon').textContent = '🔊';
-        }).catch(() => {});
+    // Auto-start on any interaction
+    function autoStartMusic() {
+      if (!musicStarted) {
+        console.log('👆 User interaction detected, starting music...');
+        startMusic();
       }
-    }, { once: false });
+    }
+    
+    document.addEventListener('click', autoStartMusic);
+    document.addEventListener('touchstart', autoStartMusic);
+    document.addEventListener('keydown', autoStartMusic);
 
     // --- THREE.JS SCENE ---
     const scene = new THREE.Scene();
@@ -350,6 +405,9 @@
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.0;
     document.body.appendChild(renderer.domElement);
+
+    // Click on canvas also starts music
+    renderer.domElement.addEventListener('click', autoStartMusic);
 
     const labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
@@ -706,14 +764,13 @@
     lblWormhole.position.set(6.0, 3.0, 3.0);
     scene.add(lblWormhole);
 
-    // ========== 6. MOVING BACKGROUND STARS (Warp Speed Effect) ==========
+    // ========== 6. MOVING BACKGROUND STARS ==========
     const movingStarCount = 3000;
     const movingPos = new Float32Array(movingStarCount * 3);
     const movingSizes = new Float32Array(movingStarCount);
     const movingSpeeds = new Float32Array(movingStarCount);
 
     for (let i = 0; i < movingStarCount; i++) {
-      // Distribute stars in a large sphere around the scene
       const radius = 60 + Math.random() * 140;
       const theta = Math.random() * Math.PI * 2;
       const phi = Math.acos(2 * Math.random() - 1);
@@ -743,7 +800,6 @@
     const movingStars = new THREE.Points(movingGeo, movingMat);
     scene.add(movingStars);
 
-    // Store star data for animation
     const starData = [];
     for (let i = 0; i < movingStarCount; i++) {
       starData.push({
@@ -765,11 +821,9 @@
       const delta = clock.getDelta();
       const elapsed = performance.now() / 1000;
 
-      // --- Move background stars (parallax effect) ---
       const positions = movingStars.geometry.attributes.position.array;
       for (let i = 0; i < movingStarCount; i++) {
         const data = starData[i];
-        // Rotate stars around the Y axis at different speeds
         data.angle += delta * data.speed * 0.5;
         
         const radius = data.radius;
@@ -782,14 +836,10 @@
         positions[i*3+2] = z;
       }
       movingStars.geometry.attributes.position.needsUpdate = true;
-
-      // Also pulse the stars slightly
       movingStars.material.opacity = 0.5 + Math.sin(elapsed * 0.2) * 0.2;
 
-      // --- Galaxy rotation ---
       galaxyGroup.rotation.y += 0.0002;
 
-      // --- Gargantua animation ---
       gargantua.children.forEach(child => {
         if (child.isMesh && child.geometry.type === 'TorusGeometry') {
           child.rotation.z += 0.008;
@@ -801,7 +851,6 @@
       });
       gargantua.rotation.y += 0.001;
 
-      // --- Wormhole animation ---
       wormhole.children.forEach(child => {
         if (child.isMesh && child.geometry.type === 'TorusGeometry') {
           child.rotation.z += 0.01;
@@ -812,7 +861,6 @@
       const wPulse = 1 + Math.sin(elapsed * 0.5) * 0.03;
       wormhole.scale.set(wPulse, wPulse, wPulse);
 
-      // --- Planets orbit ---
       planets.forEach((group) => {
         const data = group.userData;
         data.angle += delta * data.speed * 0.5;
@@ -850,7 +898,8 @@
     renderer.domElement.addEventListener('mousedown', toggleAutoRotate);
     renderer.domElement.addEventListener('touchstart', toggleAutoRotate);
 
-    console.log('🌌 Interstellar V5 — with Moving Background Stars!');
+    console.log('🌌 Interstellar V5 — with Real Interstellar Music!');
+    console.log('💡 Click anywhere on the page to start the music!');
   </script>
 </body>
 </html>
