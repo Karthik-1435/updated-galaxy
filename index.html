@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+   <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>🌌 Interstellar · V5 · Cinematic UI</title>
+  <title>🌌 Interstellar · V5 · Moving Stars</title>
   <style>
     /* --- RESET & BASE --- */
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -24,7 +24,7 @@
       padding: 0;
     }
 
-    /* --- TOP NAVIGATION BAR (glassmorphism + cinematic) --- */
+    /* --- TOP NAVIGATION BAR --- */
     #top-nav {
       display: flex;
       justify-content: space-between;
@@ -102,7 +102,7 @@
     }
     .nav-badge span { color: #fbbf24; font-weight: 400; }
 
-    /* --- MUSIC BUTTON (glass, cinematic) --- */
+    /* --- MUSIC BUTTON --- */
     #music-btn {
       background: rgba(255, 255, 255, 0.03);
       backdrop-filter: blur(12px);
@@ -133,7 +133,7 @@
       line-height: 1;
     }
 
-    /* --- BOTTOM STATUS BAR (cinematic subtitles style) --- */
+    /* --- BOTTOM STATUS BAR --- */
     #bottom-bar {
       margin-top: auto;
       padding: 24px 40px 30px 40px;
@@ -202,7 +202,6 @@
       color: rgba(255,255,255,0.15);
     }
 
-    /* --- RESPONSIVE --- */
     @media (max-width: 768px) {
       #top-nav { padding: 14px 20px; flex-direction: column; align-items: stretch; gap: 8px; }
       .brand { justify-content: space-between; width: 100%; }
@@ -222,8 +221,6 @@
     }
 
     .label-renderer { pointer-events: none !important; }
-
-    /* scrollbar hide */
     ::-webkit-scrollbar { display: none; }
   </style>
 </head>
@@ -231,8 +228,6 @@
 
   <!-- ===== UI OVERLAY ===== -->
   <div id="ui-overlay">
-    
-    <!-- TOP NAV -->
     <div id="top-nav">
       <div class="brand">
         <div class="brand-logo">
@@ -255,7 +250,6 @@
       </div>
     </div>
 
-    <!-- BOTTOM STATUS -->
     <div id="bottom-bar">
       <div class="status-left">
         <div class="status-item">
@@ -288,13 +282,14 @@
     </div>
   </div>
 
-  <!-- HIDDEN AUDIO -->
+  <!-- AUDIO -->
   <audio id="interstellar-music" loop preload="auto">
+    <!-- UNCOMMENT THE LINE BELOW AFTER ADDING YOUR interstellar.mp3 FILE -->
+    <!-- <source src="interstellar.mp3" type="audio/mpeg"> -->
     <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8f9c4f0.mp3?filename=interstellar-main-theme-14900.mp3" type="audio/mpeg">
     <source src="https://cdn.pixabay.com/download/audio/2022/11/10/audio_2e3a4f7b5c.mp3?filename=space-ambient-11253.mp3" type="audio/mpeg">
   </audio>
 
-  <!-- THREE.JS -->
   <script type="importmap">
     {
       "imports": {
@@ -711,28 +706,57 @@
     lblWormhole.position.set(6.0, 3.0, 3.0);
     scene.add(lblWormhole);
 
-    // ========== 6. BACKGROUND STARS ==========
-    const bgStars = new THREE.BufferGeometry();
-    const bgCount = 8000;
-    const bgPos = new Float32Array(bgCount * 3);
-    for (let i = 0; i < bgCount; i++) {
-      const r = 50 + Math.random() * 150;
-      const th = Math.random() * Math.PI * 2;
-      const ph = Math.acos(2 * Math.random() - 1);
-      bgPos[i*3] = Math.sin(ph) * Math.cos(th) * r;
-      bgPos[i*3+1] = Math.sin(ph) * Math.sin(th) * r * 0.3;
-      bgPos[i*3+2] = Math.cos(ph) * r;
+    // ========== 6. MOVING BACKGROUND STARS (Warp Speed Effect) ==========
+    const movingStarCount = 3000;
+    const movingPos = new Float32Array(movingStarCount * 3);
+    const movingSizes = new Float32Array(movingStarCount);
+    const movingSpeeds = new Float32Array(movingStarCount);
+
+    for (let i = 0; i < movingStarCount; i++) {
+      // Distribute stars in a large sphere around the scene
+      const radius = 60 + Math.random() * 140;
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      
+      movingPos[i*3] = Math.sin(phi) * Math.cos(theta) * radius;
+      movingPos[i*3+1] = Math.sin(phi) * Math.sin(theta) * radius * 0.6;
+      movingPos[i*3+2] = Math.cos(phi) * radius;
+      
+      movingSizes[i] = 0.08 + Math.random() * 0.25;
+      movingSpeeds[i] = 0.0003 + Math.random() * 0.001;
     }
-    bgStars.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
-    const bgMat = new THREE.PointsMaterial({
-      color: 0x88aadd,
-      size: 0.25,
+
+    const movingGeo = new THREE.BufferGeometry();
+    movingGeo.setAttribute('position', new THREE.BufferAttribute(movingPos, 3));
+    movingGeo.setAttribute('size', new THREE.BufferAttribute(movingSizes, 1));
+
+    const movingMat = new THREE.PointsMaterial({
+      color: 0x88bbff,
+      size: 0.2,
       transparent: true,
-      opacity: 0.4,
+      opacity: 0.7,
       blending: THREE.AdditiveBlending,
       depthWrite: false,
+      sizeAttenuation: true,
     });
-    scene.add(new THREE.Points(bgStars, bgMat));
+
+    const movingStars = new THREE.Points(movingGeo, movingMat);
+    scene.add(movingStars);
+
+    // Store star data for animation
+    const starData = [];
+    for (let i = 0; i < movingStarCount; i++) {
+      starData.push({
+        speed: movingSpeeds[i],
+        angle: Math.random() * Math.PI * 2,
+        tilt: (Math.random() - 0.5) * 0.5,
+        radius: Math.sqrt(
+          movingPos[i*3] * movingPos[i*3] + 
+          movingPos[i*3+1] * movingPos[i*3+1] + 
+          movingPos[i*3+2] * movingPos[i*3+2]
+        ),
+      });
+    }
 
     // ========== 7. ANIMATION ==========
     let clock = new THREE.Clock();
@@ -741,8 +765,31 @@
       const delta = clock.getDelta();
       const elapsed = performance.now() / 1000;
 
+      // --- Move background stars (parallax effect) ---
+      const positions = movingStars.geometry.attributes.position.array;
+      for (let i = 0; i < movingStarCount; i++) {
+        const data = starData[i];
+        // Rotate stars around the Y axis at different speeds
+        data.angle += delta * data.speed * 0.5;
+        
+        const radius = data.radius;
+        const x = Math.cos(data.angle) * radius * Math.cos(data.tilt);
+        const z = Math.sin(data.angle) * radius * Math.cos(data.tilt);
+        const y = Math.sin(data.angle + data.tilt) * radius * 0.3;
+        
+        positions[i*3] = x;
+        positions[i*3+1] = y;
+        positions[i*3+2] = z;
+      }
+      movingStars.geometry.attributes.position.needsUpdate = true;
+
+      // Also pulse the stars slightly
+      movingStars.material.opacity = 0.5 + Math.sin(elapsed * 0.2) * 0.2;
+
+      // --- Galaxy rotation ---
       galaxyGroup.rotation.y += 0.0002;
 
+      // --- Gargantua animation ---
       gargantua.children.forEach(child => {
         if (child.isMesh && child.geometry.type === 'TorusGeometry') {
           child.rotation.z += 0.008;
@@ -754,6 +801,7 @@
       });
       gargantua.rotation.y += 0.001;
 
+      // --- Wormhole animation ---
       wormhole.children.forEach(child => {
         if (child.isMesh && child.geometry.type === 'TorusGeometry') {
           child.rotation.z += 0.01;
@@ -764,6 +812,7 @@
       const wPulse = 1 + Math.sin(elapsed * 0.5) * 0.03;
       wormhole.scale.set(wPulse, wPulse, wPulse);
 
+      // --- Planets orbit ---
       planets.forEach((group) => {
         const data = group.userData;
         data.angle += delta * data.speed * 0.5;
@@ -801,7 +850,7 @@
     renderer.domElement.addEventListener('mousedown', toggleAutoRotate);
     renderer.domElement.addEventListener('touchstart', toggleAutoRotate);
 
-    console.log('🌌 Interstellar V5 — Cinematic UI');
+    console.log('🌌 Interstellar V5 — with Moving Background Stars!');
   </script>
 </body>
 </html>
