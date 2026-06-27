@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🌌 Interstellar · V5 · Cinematic UI</title>
+  <style>
+    /* --- RESET & BASE --- */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      overflow: hidden; 
+      background: #000; 
+      font-family: 'Segoe UI', 'Poppins', -apple-system, sans-serif;
+      color: #fff;
+    }
+    canvas { display: block; }
+
+    /* ===== CINEMATIC UI OVERLAY ===== */
+    #ui-overlay {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none; z-index: 20;
+      display: flex; flex-direction: column;
+      padding: 0;
+    }
+
+    /* --- TOP NAVIGATION BAR (glassmorphism + cinematic) --- */
+    #top-nav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 18px 40px;
+      background: linear-gradient(180deg, rgba(8, 6, 25, 0.85) 0%, rgba(8, 6, 25, 0.3) 80%, transparent 100%);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255, 215, 150, 0.06);
+      pointer-events: auto;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .brand-logo {
+      font-size: 2rem;
+      font-weight: 200;
+      letter-spacing: 6px;
+      background: linear-gradient(135deg, #f6d365, #fda085, #a18cd1, #fbc2eb);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 0 0 60px rgba(255, 200, 100, 0.15);
+    }
+    .brand-logo small {
+      font-size: 0.7rem;
+      letter-spacing: 3px;
+      -webkit-text-fill-color: rgba(255,255,255,0.25);
+      font-weight: 300;
+      margin-left: 10px;
+    }
+    .brand-sub {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.2);
+      letter-spacing: 4px;
+      font-weight: 300;
+      border-left: 1px solid rgba(255,255,255,0.06);
+      padding-left: 16px;
+    }
+
+    .nav-controls {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .nav-badge {
+      background: rgba(255, 215, 150, 0.04);
+      border: 1px solid rgba(255, 215, 150, 0.06);
+      border-radius: 40px;
+      padding: 6px 18px;
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.4);
+      letter-spacing: 2px;
+      font-weight: 300;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .nav-badge .dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: #fbbf24;
+      display: inline-block;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 0.3; transform: scale(0.8); }
+      50% { opacity: 1; transform: scale(1.2); }
+    }
+    .nav-badge span { color: #fbbf24; font-weight: 400; }
+
+    /* --- MUSIC BUTTON (glass, cinematic) --- */
+    #music-btn {
+      background: rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 215, 150, 0.08);
+      border-radius: 40px;
+      padding: 8px 20px 8px 16px;
+      color: rgba(255,255,255,0.7);
+      font-size: 0.8rem;
+      font-family: inherit;
+      cursor: pointer;
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      letter-spacing: 1px;
+      font-weight: 300;
+    }
+    #music-btn:hover {
+      background: rgba(255, 215, 150, 0.06);
+      border-color: rgba(255, 215, 150, 0.2);
+      transform: scale(1.02);
+      box-shadow: 0 0 30px rgba(255, 215, 150, 0.05);
+    }
+    #music-btn .icon {
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    /* --- BOTTOM STATUS BAR (cinematic subtitles style) --- */
+    #bottom-bar {
+      margin-top: auto;
+      padding: 24px 40px 30px 40px;
+      background: linear-gradient(0deg, rgba(8, 6, 25, 0.7) 0%, rgba(8, 6, 25, 0.2) 70%, transparent 100%);
+      backdrop-filter: blur(6px);
+      -webkit-backdrop-filter: blur(6px);
+      pointer-events: auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 16px;
+      border-top: 1px solid rgba(255, 215, 150, 0.03);
+    }
+
+    .status-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .status-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: rgba(255,255,255,0.3);
+      font-size: 0.7rem;
+      letter-spacing: 2px;
+      font-weight: 300;
+    }
+    .status-item .label {
+      color: rgba(255,255,255,0.15);
+      text-transform: uppercase;
+      font-size: 0.6rem;
+      letter-spacing: 3px;
+    }
+    .status-item .value {
+      color: rgba(255,255,255,0.5);
+      font-weight: 400;
+    }
+    .status-item .value.glow {
+      color: #fbbf24;
+      text-shadow: 0 0 20px rgba(251, 191, 36, 0.15);
+    }
+
+    .status-right {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .status-hint {
+      color: rgba(255,255,255,0.15);
+      font-size: 0.65rem;
+      letter-spacing: 2px;
+      font-weight: 300;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .status-hint .key {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.04);
+      padding: 2px 12px;
+      border-radius: 20px;
+      font-size: 0.6rem;
+      color: rgba(255,255,255,0.15);
+    }
+
+    /* --- RESPONSIVE --- */
+    @media (max-width: 768px) {
+      #top-nav { padding: 14px 20px; flex-direction: column; align-items: stretch; gap: 8px; }
+      .brand { justify-content: space-between; width: 100%; }
+      .brand-logo { font-size: 1.3rem; letter-spacing: 3px; }
+      .brand-logo small { font-size: 0.5rem; }
+      .brand-sub { display: none; }
+      .nav-controls { justify-content: space-between; width: 100%; }
+      #bottom-bar { padding: 16px 20px 20px 20px; flex-direction: column; align-items: stretch; gap: 10px; }
+      .status-left { gap: 12px; }
+      .status-right { justify-content: flex-start; }
+      #music-btn { padding: 6px 14px 6px 12px; font-size: 0.7rem; }
+      #music-btn .icon { font-size: 1rem; }
+    }
+    @media (max-width: 480px) {
+      .status-item .label { display: none; }
+      .status-hint .key { display: none; }
+    }
+
+    .label-renderer { pointer-events: none !important; }
+
+    /* scrollbar hide */
+    ::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+
+  <!-- ===== UI OVERLAY ===== -->
+  <div id="ui-overlay">
+    
+    <!-- TOP NAV -->
+    <div id="top-nav">
+      <div class="brand">
+        <div class="brand-logo">
+          ✦ INTERSTELLAR
+          <small>v5</small>
+        </div>
+        <div class="brand-sub">GARGANTUA · WORMHOLE · PLANETS</div>
+      </div>
+      <div class="nav-controls">
+        <div class="nav-badge">
+          <span class="dot"></span>
+          <span>LIVE</span>
+          <span style="opacity:0.3;margin:0 4px;">|</span>
+          <span style="color:rgba(255,255,255,0.3);">3D</span>
+        </div>
+        <button id="music-btn">
+          <span class="icon">🔊</span>
+          <span id="music-label">Play Theme</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BOTTOM STATUS -->
+    <div id="bottom-bar">
+      <div class="status-left">
+        <div class="status-item">
+          <span class="label">Object</span>
+          <span class="value glow">✦ Gargantua</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Distance</span>
+          <span class="value">~10 ly</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Planets</span>
+          <span class="value">5</span>
+        </div>
+        <div class="status-item">
+          <span class="label">Wormhole</span>
+          <span class="value" style="color:#7dd3fc;">active</span>
+        </div>
+      </div>
+      <div class="status-right">
+        <div class="status-hint">
+          <span>🪐</span>
+          <span>drag to orbit</span>
+          <span class="key">scroll</span>
+          <span>zoom</span>
+          <span style="opacity:0.2;">|</span>
+          <span style="color:#93c5fd;">auto‑rotate</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIDDEN AUDIO -->
+  <audio id="interstellar-music" loop preload="auto">
+    <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8f9c4f0.mp3?filename=interstellar-main-theme-14900.mp3" type="audio/mpeg">
+    <source src="https://cdn.pixabay.com/download/audio/2022/11/10/audio_2e3a4f7b5c.mp3?filename=space-ambient-11253.mp3" type="audio/mpeg">
+  </audio>
+
+  <!-- THREE.JS -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.126.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.126.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+    // --- MUSIC CONTROL ---
+    const audio = document.getElementById('interstellar-music');
+    const musicBtn = document.getElementById('music-btn');
+    const musicLabel = document.getElementById('music-label');
+    let isPlaying = false;
+
+    function toggleMusic() {
+      if (isPlaying) {
+        audio.pause();
+        isPlaying = false;
+        musicLabel.textContent = 'Play Theme';
+        musicBtn.querySelector('.icon').textContent = '🔇';
+      } else {
+        audio.play().then(() => {
+          isPlaying = true;
+          musicLabel.textContent = 'Pause';
+          musicBtn.querySelector('.icon').textContent = '🔊';
+        }).catch(() => {});
+      }
+    }
+    musicBtn.addEventListener('click', toggleMusic);
+
+    document.addEventListener('click', () => {
+      if (!isPlaying && audio.paused) {
+        audio.play().then(() => {
+          isPlaying = true;
+          musicLabel.textContent = 'Pause';
+          musicBtn.querySelector('.icon').textContent = '🔊';
+        }).catch(() => {});
+      }
+    }, { once: false });
+
+    // --- THREE.JS SCENE ---
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x020208);
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 500);
+    camera.position.set(18, 8, 28);
+    camera.lookAt(0, 0, 0);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.0;
+    document.body.appendChild(renderer.domElement);
+
+    const labelRenderer = new CSS2DRenderer();
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    labelRenderer.domElement.style.position = 'absolute';
+    labelRenderer.domElement.style.top = '0px';
+    labelRenderer.domElement.style.left = '0px';
+    labelRenderer.domElement.style.pointerEvents = 'none';
+    labelRenderer.domElement.classList.add('label-renderer');
+    document.body.appendChild(labelRenderer.domElement);
+
+    // --- controls ---
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.autoRotate = true;
+    controls.autoRotateSpeed = 0.4;
+    controls.rotateSpeed = 0.6;
+    controls.target.set(0, 0.5, 0);
+    controls.maxPolarAngle = Math.PI / 2.1;
+    controls.minDistance = 6;
+    controls.maxDistance = 55;
+
+    // --- lighting ---
+    const ambient = new THREE.AmbientLight(0x1a1a3a, 0.4);
+    scene.add(ambient);
+    const key = new THREE.DirectionalLight(0xffcc88, 1.2);
+    key.position.set(5, 12, 10);
+    scene.add(key);
+    const fill = new THREE.DirectionalLight(0x88aaff, 0.6);
+    fill.position.set(-8, 4, 8);
+    scene.add(fill);
+    const rim = new THREE.DirectionalLight(0xff66aa, 0.5);
+    rim.position.set(8, -2, -12);
+    scene.add(rim);
+    const warm = new THREE.PointLight(0xff8844, 0.9, 40);
+    warm.position.set(8, 3, 6);
+    scene.add(warm);
+    const cool = new THREE.PointLight(0x4488ff, 0.7, 40);
+    cool.position.set(-6, -2, 10);
+    scene.add(cool);
+
+    // --- label helper ---
+    function createLabel(text, color = '#ffd6a0', size = '16px') {
+      const div = document.createElement('div');
+      div.textContent = text;
+      div.style.color = color;
+      div.style.fontFamily = 'Segoe UI, Poppins, sans-serif';
+      div.style.fontWeight = '300';
+      div.style.fontSize = size;
+      div.style.textShadow = '0 0 40px rgba(0,0,0,0.95), 0 0 20px currentColor';
+      div.style.background = 'rgba(5, 5, 25, 0.3)';
+      div.style.backdropFilter = 'blur(8px)';
+      div.style.padding = '4px 20px';
+      div.style.borderRadius = '40px';
+      div.style.border = '1px solid rgba(255,215,150,0.1)';
+      div.style.letterSpacing = '2px';
+      return new CSS2DObject(div);
+    }
+
+    // ========== 1. GALAXY ==========
+    const galaxyGroup = new THREE.Group();
+    const diskMat = new THREE.MeshPhongMaterial({ color: 0x1a0e3a, emissive: 0x331155, transparent: true, opacity: 0.15, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+    const disk = new THREE.Mesh(new THREE.CircleGeometry(9.0, 64), diskMat);
+    disk.rotation.x = -Math.PI / 2; disk.position.y = -0.1;
+    galaxyGroup.add(disk);
+    const disk2Mat = new THREE.MeshPhongMaterial({ color: 0x2a1a4a, emissive: 0x442266, transparent: true, opacity: 0.1, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, depthWrite: false });
+    const disk2 = new THREE.Mesh(new THREE.CircleGeometry(7.5, 48), disk2Mat);
+    disk2.rotation.x = -Math.PI / 2; disk2.position.y = 0.1;
+    galaxyGroup.add(disk2);
+
+    const starCount = 25000;
+    const pos = new Float32Array(starCount * 3);
+    const col = new Float32Array(starCount * 3);
+    const arms = 4, radiusMax = 8.0, coreR = 1.8;
+    const cCore = new THREE.Color(0xffcc77), cMid = new THREE.Color(0x99bbff), cOuter = new THREE.Color(0x4466aa);
+    for (let i = 0; i < starCount; i++) {
+      const armIdx = Math.floor(Math.random() * arms);
+      const angleOff = (armIdx / arms) * Math.PI * 2;
+      let r = (i < starCount * 0.15) ? Math.pow(Math.random(), 0.5) * coreR * 1.8 : coreR + Math.pow(Math.random(), 0.6) * (radiusMax - coreR);
+      const spiral = r * 1.5 + angleOff + (Math.random() - 0.5) * 0.8 * (1 + r * 0.2);
+      const thick = 0.35 * (1 - r / radiusMax * 0.5);
+      const y = (Math.random() - 0.5) * thick * 2.0;
+      pos[i*3] = Math.cos(spiral) * r;
+      pos[i*3+1] = y;
+      pos[i*3+2] = Math.sin(spiral) * r;
+      let color;
+      if (r < coreR * 1.3) color = cCore.clone().lerp(new THREE.Color(0xff9944), Math.random() * 0.5);
+      else { const t = (r - coreR) / (radiusMax - coreR); color = cMid.clone().lerp(cOuter, t); color.multiplyScalar(0.7 + 0.5 * Math.random()); if (Math.random() < 0.02) color.setHSL(0.08, 0.9, 0.7); }
+      col[i*3] = color.r; col[i*3+1] = color.g; col[i*3+2] = color.b;
+    }
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+    starGeo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+    const starMat = new THREE.PointsMaterial({ size: 0.14, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true });
+    galaxyGroup.add(new THREE.Points(starGeo, starMat));
+
+    const coreCount = 800;
+    const cPos = new Float32Array(coreCount * 3), cCol = new Float32Array(coreCount * 3);
+    for (let i = 0; i < coreCount; i++) {
+      const r = Math.pow(Math.random(), 0.4) * 2.0, theta = Math.random() * Math.PI * 2, phi = Math.random() * Math.PI * 2;
+      cPos[i*3] = Math.cos(theta) * Math.sin(phi) * r;
+      cPos[i*3+1] = Math.sin(theta) * Math.sin(phi) * r * 0.5;
+      cPos[i*3+2] = Math.cos(phi) * r;
+      const c = new THREE.Color(0xffdd77).lerp(new THREE.Color(0xff8844), Math.random());
+      cCol[i*3] = c.r; cCol[i*3+1] = c.g; cCol[i*3+2] = c.b;
+    }
+    const coreGeo = new THREE.BufferGeometry();
+    coreGeo.setAttribute('position', new THREE.BufferAttribute(cPos, 3));
+    coreGeo.setAttribute('color', new THREE.BufferAttribute(cCol, 3));
+    const coreMat = new THREE.PointsMaterial({ size: 0.3, vertexColors: true, blending: THREE.AdditiveBlending, depthWrite: false, sizeAttenuation: true });
+    galaxyGroup.add(new THREE.Points(coreGeo, coreMat));
+    scene.add(galaxyGroup);
+
+    // ========== 2. GARGANTUA ==========
+    function createGargantua(pos, scale = 1.0) {
+      const group = new THREE.Group();
+      const sphereMat = new THREE.MeshStandardMaterial({
+        color: 0x000000,
+        emissive: 0x110022,
+        emissiveIntensity: 0.5,
+        roughness: 0.1,
+        metalness: 0.95,
+      });
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.0 * scale, 48, 48), sphereMat);
+      group.add(sphere);
+
+      const colors = [0xff8844, 0xff6633, 0xff4411, 0xcc22aa];
+      const radii = [1.6, 1.9, 2.2, 2.6];
+      radii.forEach((r, idx) => {
+        const mat = new THREE.MeshStandardMaterial({
+          color: colors[idx % colors.length],
+          emissive: colors[idx % colors.length],
+          emissiveIntensity: 0.6 + idx * 0.2,
+          transparent: true,
+          opacity: 0.3 + idx * 0.1,
+          side: THREE.DoubleSide,
+          blending: THREE.AdditiveBlending,
+          depthWrite: false,
+        });
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(r * scale, 0.15 * scale * (1 + idx * 0.2), 32, 64), mat);
+        ring.rotation.x = Math.PI / 2.3;
+        ring.rotation.z = 0.3;
+        group.add(ring);
+      });
+
+      const hotMat = new THREE.MeshStandardMaterial({
+        color: 0xffaa66,
+        emissive: 0xff8844,
+        emissiveIntensity: 2.0,
+        transparent: true,
+        opacity: 0.9,
+        blending: THREE.AdditiveBlending,
+      });
+      const hotRing = new THREE.Mesh(new THREE.TorusGeometry(1.2 * scale, 0.12 * scale, 24, 48), hotMat);
+      hotRing.rotation.x = Math.PI / 2.3;
+      hotRing.rotation.z = 0.3;
+      group.add(hotRing);
+
+      const glowMat = new THREE.MeshBasicMaterial({
+        color: 0x8844ff,
+        transparent: true,
+        opacity: 0.08,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        side: THREE.BackSide,
+      });
+      const glow = new THREE.Mesh(new THREE.SphereGeometry(3.0 * scale, 32, 32), glowMat);
+      group.add(glow);
+
+      const pc = 300;
+      const pGeo = new THREE.BufferGeometry();
+      const pPos = new Float32Array(pc * 3);
+      for (let i = 0; i < pc; i++) {
+        const r = 1.3 * scale + Math.random() * 1.8 * scale;
+        const a = Math.random() * Math.PI * 2;
+        const yOff = (Math.random() - 0.5) * 0.5 * scale;
+        pPos[i*3] = Math.cos(a) * r;
+        pPos[i*3+1] = Math.sin(a) * r * 0.2 + yOff;
+        pPos[i*3+2] = Math.sin(a) * r * 0.15;
+      }
+      pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+      const pMat = new THREE.PointsMaterial({
+        color: 0xff8844,
+        size: 0.06 * scale,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false,
+      });
+      group.add(new THREE.Points(pGeo, pMat));
+
+      group.position.copy(pos);
+      return group;
+    }
+
+    const gargantua = createGargantua(new THREE.Vector3(0, 0, 0), 1.2);
+    scene.add(gargantua);
+
+    // ========== 3. WORMHOLE ==========
+    function createWormhole(pos, scale = 1.0) {
+      const group = new THREE.Group();
+      const sphereMat = new THREE.MeshStandardMaterial({
+        color: 0x4488ff,
+        emissive: 0x8844ff,
+        emissiveIntensity: 0.8,
+        transparent: true,
+        opacity: 0.2,
+        roughness: 0.1,
+        metalness: 0.1,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      });
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(1.2 * scale, 32, 32), sphereMat);
+      group.add(sphere);
+
+      const ringMat1 = new THREE.MeshStandardMaterial({
+        color: 0x66aaff,
+        emissive: 0x8844ff,
+        emissiveIntensity: 1.0,
+        transparent: true,
+        opacity: 0.7,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      });
+      const ring1 = new THREE.Mesh(new THREE.TorusGeometry(1.4 * scale, 0.1 * scale, 32, 48), ringMat1);
+      ring1.rotation.x = Math.PI / 2.8;
+      ring1.rotation.z = 0.5;
+      group.add(ring1);
+
+      const ringMat2 = new THREE.MeshStandardMaterial({
+        color: 0xaa88ff,
+        emissive: 0xaa44ff,
+        emissiveIntensity: 0.8,
+        transparent: true,
+        opacity: 0.6,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      });
+      const ring2 = new THREE.Mesh(new THREE.TorusGeometry(1.6 * scale, 0.08 * scale, 32, 48), ringMat2);
+      ring2.rotation.x = Math.PI / 2.2;
+      ring2.rotation.z = 0.8;
+      group.add(ring2);
+
+      const ringMat3 = new THREE.MeshStandardMaterial({
+        color: 0xff88aa,
+        emissive: 0xff44aa,
+        emissiveIntensity: 0.6,
+        transparent: true,
+        opacity: 0.4,
+        side: THREE.DoubleSide,
+        blending: THREE.AdditiveBlending,
+      });
+      const ring3 = new THREE.Mesh(new THREE.TorusGeometry(1.8 * scale, 0.06 * scale, 24, 40), ringMat3);
+      ring3.rotation.x = 1.0;
+      ring3.rotation.z = 1.2;
+      group.add(ring3);
+
+      const pc = 150;
+      const pGeo = new THREE.BufferGeometry();
+      const pPos = new Float32Array(pc * 3);
+      for (let i = 0; i < pc; i++) {
+        const r = 1.0 * scale + Math.random() * 1.5 * scale;
+        const th = Math.random() * Math.PI * 2;
+        const ph = Math.random() * Math.PI * 2;
+        pPos[i*3] = Math.cos(th) * Math.sin(ph) * r;
+        pPos[i*3+1] = Math.sin(th) * Math.sin(ph) * r * 0.6;
+        pPos[i*3+2] = Math.cos(ph) * r;
+      }
+      pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
+      const pMat = new THREE.PointsMaterial({
+        color: 0x88aaff,
+        size: 0.08 * scale,
+        blending: THREE.AdditiveBlending,
+        transparent: true,
+        depthWrite: false,
+      });
+      group.add(new THREE.Points(pGeo, pMat));
+
+      group.position.copy(pos);
+      return group;
+    }
+
+    const wormhole = createWormhole(new THREE.Vector3(6.0, 1.5, 3.0), 0.9);
+    scene.add(wormhole);
+
+    // ========== 4. PLANETS ==========
+    const planets = [];
+    const planetData = [
+      { color: 0x4a8fe7, size: 0.7, distance: 4.5, speed: 0.9, label: '🌊 Miller', ring: false },
+      { color: 0xd4a574, size: 0.6, distance: 6.0, speed: 0.6, label: '🏜️ Mann', ring: false },
+      { color: 0x6c5ce7, size: 0.5, distance: 7.8, speed: 0.4, label: '🪐 Edmunds', ring: true },
+      { color: 0xff6b6b, size: 0.55, distance: 9.5, speed: 0.3, label: '🔴 Gargantua-1', ring: false },
+      { color: 0x4ecdc4, size: 0.45, distance: 11.2, speed: 0.2, label: '🟢 Cooper', ring: false },
+    ];
+
+    const orbitGroup = new THREE.Group();
+    scene.add(orbitGroup);
+
+    planetData.forEach((data) => {
+      const group = new THREE.Group();
+      const orbitPoints = [];
+      const segments = 64;
+      for (let i = 0; i <= segments; i++) {
+        const angle = (i / segments) * Math.PI * 2;
+        orbitPoints.push(new THREE.Vector3(Math.cos(angle) * data.distance, 0, Math.sin(angle) * data.distance));
+      }
+      const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+      const orbitMat = new THREE.LineBasicMaterial({ color: 0x4488ff, transparent: true, opacity: 0.08 });
+      const orbitLine = new THREE.Line(orbitGeo, orbitMat);
+      orbitLine.rotation.x = Math.PI / 2;
+      group.add(orbitLine);
+
+      const sphereMat = new THREE.MeshStandardMaterial({
+        color: data.color,
+        emissive: data.color,
+        emissiveIntensity: 0.1,
+        roughness: 0.5,
+        metalness: 0.1,
+      });
+      const sphere = new THREE.Mesh(new THREE.SphereGeometry(data.size, 32, 32), sphereMat);
+      sphere.position.x = data.distance;
+      
+      if (data.ring) {
+        const ringMat = new THREE.MeshStandardMaterial({
+          color: 0xccaa88,
+          emissive: 0x443322,
+          transparent: true,
+          opacity: 0.25,
+          side: THREE.DoubleSide,
+        });
+        const ring = new THREE.Mesh(new THREE.TorusGeometry(data.size * 1.6, 0.06, 16, 32), ringMat);
+        ring.rotation.x = Math.PI / 2.8;
+        ring.rotation.z = 0.4;
+        sphere.add(ring);
+      }
+      group.add(sphere);
+
+      const label = createLabel(data.label, '#fff', '13px');
+      label.position.set(data.distance, data.size + 0.8, 0);
+      group.add(label);
+
+      group.userData = { distance: data.distance, speed: data.speed, angle: Math.random() * Math.PI * 2 };
+      orbitGroup.add(group);
+      planets.push(group);
+    });
+
+    // ========== 5. LABELS ==========
+    const lblGalaxy = createLabel('✦ Milky Way', '#fcd34d', '18px');
+    lblGalaxy.position.set(0, 3.5, 0);
+    scene.add(lblGalaxy);
+    const lblGargantua = createLabel('⚫ Gargantua', '#ff8844', '18px');
+    lblGargantua.position.set(0, -2.5, 0);
+    scene.add(lblGargantua);
+    const lblWormhole = createLabel('🌀 Wormhole', '#88aaff', '16px');
+    lblWormhole.position.set(6.0, 3.0, 3.0);
+    scene.add(lblWormhole);
+
+    // ========== 6. BACKGROUND STARS ==========
+    const bgStars = new THREE.BufferGeometry();
+    const bgCount = 8000;
+    const bgPos = new Float32Array(bgCount * 3);
+    for (let i = 0; i < bgCount; i++) {
+      const r = 50 + Math.random() * 150;
+      const th = Math.random() * Math.PI * 2;
+      const ph = Math.acos(2 * Math.random() - 1);
+      bgPos[i*3] = Math.sin(ph) * Math.cos(th) * r;
+      bgPos[i*3+1] = Math.sin(ph) * Math.sin(th) * r * 0.3;
+      bgPos[i*3+2] = Math.cos(ph) * r;
+    }
+    bgStars.setAttribute('position', new THREE.BufferAttribute(bgPos, 3));
+    const bgMat = new THREE.PointsMaterial({
+      color: 0x88aadd,
+      size: 0.25,
+      transparent: true,
+      opacity: 0.4,
+      blending: THREE.AdditiveBlending,
+      depthWrite: false,
+    });
+    scene.add(new THREE.Points(bgStars, bgMat));
+
+    // ========== 7. ANIMATION ==========
+    let clock = new THREE.Clock();
+
+    function animate() {
+      const delta = clock.getDelta();
+      const elapsed = performance.now() / 1000;
+
+      galaxyGroup.rotation.y += 0.0002;
+
+      gargantua.children.forEach(child => {
+        if (child.isMesh && child.geometry.type === 'TorusGeometry') {
+          child.rotation.z += 0.008;
+        }
+        if (child.isMesh && child.geometry.type === 'SphereGeometry' && child.material.opacity < 0.2) {
+          const pulse = 1 + Math.sin(elapsed * 0.3) * 0.05;
+          child.scale.set(pulse, pulse, pulse);
+        }
+      });
+      gargantua.rotation.y += 0.001;
+
+      wormhole.children.forEach(child => {
+        if (child.isMesh && child.geometry.type === 'TorusGeometry') {
+          child.rotation.z += 0.01;
+          child.rotation.x += 0.005;
+        }
+      });
+      wormhole.rotation.y += 0.003;
+      const wPulse = 1 + Math.sin(elapsed * 0.5) * 0.03;
+      wormhole.scale.set(wPulse, wPulse, wPulse);
+
+      planets.forEach((group) => {
+        const data = group.userData;
+        data.angle += delta * data.speed * 0.5;
+        const x = Math.cos(data.angle) * data.distance;
+        const z = Math.sin(data.angle) * data.distance;
+        group.position.set(x, 0, z);
+        group.children.forEach(child => {
+          if (child.isMesh) {
+            child.rotation.y += delta * 0.3;
+          }
+        });
+      });
+
+      controls.update();
+      renderer.render(scene, camera);
+      labelRenderer.render(scene, camera);
+      requestAnimationFrame(animate);
+    }
+    animate();
+
+    // --- resize ---
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      labelRenderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // --- auto-rotate toggle ---
+    const toggleAutoRotate = () => {
+      controls.autoRotate = false;
+      clearTimeout(window._autoRotateTimer);
+      window._autoRotateTimer = setTimeout(() => { controls.autoRotate = true; }, 4000);
+    };
+    renderer.domElement.addEventListener('mousedown', toggleAutoRotate);
+    renderer.domElement.addEventListener('touchstart', toggleAutoRotate);
+
+    console.log('🌌 Interstellar V5 — Cinematic UI');
+  </script>
+</body>
+</html>
