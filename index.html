@@ -282,16 +282,12 @@
     </div>
   </div>
 
-  <!-- ===== AUDIO - INTERSTELLAR MUSIC ===== -->
-  <!-- ⚠️ IMPORTANT: YouTube URLs DON'T work in audio tags! -->
-  <!-- Use your local MP3 file instead: -->
-  <audio id="interstellar-music" loop preload="auto">
-    <!-- Your local MP3 file (make sure it's in the same folder) -->
+  <!-- =========================
+       INTERSTELLAR BACKGROUND MUSIC
+  ========================== -->
+  <audio id="interstellar-music" preload="auto" loop>
     <source src="interstellar.mp3" type="audio/mpeg">
-    <source src="./interstellar.mp3" type="audio/mpeg">
-    
-    <!-- Fallback: Online instrumental track -->
-    <source src="https://cdn.pixabay.com/download/audio/2022/03/10/audio_c8c8f9c4f0.mp3?filename=interstellar-main-theme-14900.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
   </audio>
 
   <script type="importmap">
@@ -309,87 +305,65 @@
     import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
     // --- MUSIC CONTROL ---
-    const audio = document.getElementById('interstellar-music');
-    const musicBtn = document.getElementById('music-btn');
-    const musicLabel = document.getElementById('music-label');
-    let isPlaying = false;
-    let musicStarted = false;
+    const audio = document.getElementById("interstellar-music");
+    const musicBtn = document.getElementById("music-btn");
+    const musicLabel = document.getElementById("music-label");
 
-    console.log('🎵 Audio element loaded. Checking sources...');
-    
-    // Log all audio sources for debugging
-    const sources = audio.querySelectorAll('source');
-    sources.forEach((source, index) => {
-      console.log(`📁 Source ${index + 1}: ${source.getAttribute('src')} (type: ${source.getAttribute('type')})`);
+    audio.volume = 0.5;
+    let isPlaying = false;
+
+    // Play / Pause Button
+    musicBtn.addEventListener("click", async () => {
+      try {
+        if (!isPlaying) {
+          await audio.play();
+          isPlaying = true;
+          musicLabel.textContent = "Pause Theme";
+          musicBtn.querySelector(".icon").innerHTML = "🔊";
+        } else {
+          audio.pause();
+          isPlaying = false;
+          musicLabel.textContent = "Play Theme";
+          musicBtn.querySelector(".icon").innerHTML = "🔇";
+        }
+      } catch (err) {
+        console.error(err);
+        alert("Unable to play music.");
+      }
     });
 
-    function startMusic() {
-      if (musicStarted) {
-        console.log('🎵 Music already playing');
-        return;
-      }
-      
-      console.log('🎵 Attempting to start Interstellar music...');
-      audio.volume = 0.6;
-      
-      audio.play().then(() => {
-        isPlaying = true;
-        musicStarted = true;
-        musicLabel.textContent = 'Pause';
-        musicBtn.querySelector('.icon').textContent = '🔊';
-        console.log('✅ Interstellar "First Step" music started successfully! 🎵');
-      }).catch(err => {
-        console.log('❌ Audio play error:', err.message);
-        console.log('💡 Trying fallback...');
-        audio.load();
-        setTimeout(() => {
-          audio.play().then(() => {
-            isPlaying = true;
-            musicStarted = true;
-            musicLabel.textContent = 'Pause';
-            musicBtn.querySelector('.icon').textContent = '🔊';
-            console.log('✅ Music started after reload!');
-          }).catch(err2 => {
-            console.log('❌ Still cannot play:', err2.message);
-            musicLabel.textContent = 'Click to Play';
-            musicBtn.querySelector('.icon').textContent = '🔊';
-          });
-        }, 500);
-      });
-    }
+    // Update UI
+    audio.addEventListener("play", () => {
+      isPlaying = true;
+      musicLabel.textContent = "Pause Theme";
+      musicBtn.querySelector(".icon").innerHTML = "🔊";
+    });
 
-    function toggleMusic() {
-      if (isPlaying) {
-        audio.pause();
-        isPlaying = false;
-        musicLabel.textContent = 'Play Theme';
-        musicBtn.querySelector('.icon').textContent = '🔇';
-        console.log('⏸️ Music paused');
-      } else {
-        audio.play().then(() => {
-          isPlaying = true;
-          musicStarted = true;
-          musicLabel.textContent = 'Pause';
-          musicBtn.querySelector('.icon').textContent = '🔊';
-          console.log('▶️ Music resumed');
-        }).catch(err => {
-          console.log('❌ Cannot play:', err.message);
-        });
-      }
-    }
-    musicBtn.addEventListener('click', toggleMusic);
+    audio.addEventListener("pause", () => {
+      isPlaying = false;
+      musicLabel.textContent = "Play Theme";
+      musicBtn.querySelector(".icon").innerHTML = "🔇";
+    });
 
-    // Auto-start on any interaction
-    function autoStartMusic() {
-      if (!musicStarted) {
-        console.log('👆 User interaction detected, starting music...');
-        startMusic();
-      }
-    }
-    
-    document.addEventListener('click', autoStartMusic);
-    document.addEventListener('touchstart', autoStartMusic);
-    document.addEventListener('keydown', autoStartMusic);
+    audio.addEventListener("ended", () => {
+      audio.play();
+    });
+
+    // Start music after first click anywhere
+    document.addEventListener(
+      "click",
+      async () => {
+        if (!isPlaying) {
+          try {
+            await audio.play();
+            console.log("🎵 Interstellar music started!");
+          } catch (e) {
+            console.log("⚠️ Music auto-start blocked:", e);
+          }
+        }
+      },
+      { once: true }
+    );
 
     // --- THREE.JS SCENE ---
     const scene = new THREE.Scene();
@@ -407,7 +381,16 @@
     document.body.appendChild(renderer.domElement);
 
     // Click on canvas also starts music
-    renderer.domElement.addEventListener('click', autoStartMusic);
+    renderer.domElement.addEventListener("click", async () => {
+      if (!isPlaying) {
+        try {
+          await audio.play();
+          console.log("🎵 Music started from canvas click!");
+        } catch (e) {
+          console.log("⚠️ Cannot start from canvas:", e);
+        }
+      }
+    });
 
     const labelRenderer = new CSS2DRenderer();
     labelRenderer.setSize(window.innerWidth, window.innerHeight);
